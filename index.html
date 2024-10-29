@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Deos Client Demo App</title>
+</head>
+<body>
+    <label for="dropdown">Select a game:</label>
+    <select id="dropdown" name="dropdown">
+        <option value="M2">M2</option>
+    </select>
+    <br/>
+    <button id="try" onClick="start()" style="position:fixed;z-index:1000;top:50px;left:10px">try game</button>
+    <button id="stop" onClick="quit()" style="position:fixed;z-index:1000;top:50px;left:85px">Stop game</button>
+    <button id="fullscreen" onClick="requestFullScreen()" style="position:fixed;z-index:1000;top:50px;left:170px">Fullscreen</button>
+    <button id="instances" onClick="instances()" style="position:fixed;z-index:1000;top:50px;left:250px">show all instances</button>
+    <button id="stopall" onClick="stopAll()" style="position:fixed;z-index:1000;top:50px;left:380px">stop all instances</button>
+    <button id="quota" onClick="quota()" style="position:fixed;z-index:1000;top:50px;left:500px">show quota</button>
+    <br/> <br/>
+    <p id="status"></p>
+    <br/>
+    <iframe id="iFrame" width="1200" height="640" frameborder="0" style="position:relative;z-index:100" allow="autoplay"></iframe>
+</body>
+<script type="module" src="config.js"></script>
+<script type="module" src="dist/bundle.js"></script>
+<script>
+    const iframe = document.getElementById("iFrame");
+    const fullscreenButton = document.getElementById("fullscreen");
+    const statusText = document.getElementById("status");
+    let app_instance = '';
+
+    window.addEventListener('message', (event) => {
+        if (event.data.type === 'log') {
+            console.log('Log from iframe:', event);
+        }
+    });
+
+    function requestFullScreen() {
+        iframe.requestFullscreen();
+        iframe.focus();
+        navigator.keyboard.lock();
+    }
+
+    function getAppName() {
+        const dropdown = document.getElementById("dropdown");
+        return dropdown.value;
+    }
+
+    function quit() {
+        deos.close(app_instance);
+        app_instance = '';
+        iframe.src = '';
+        statusText.innerText = 'Thank you for trying the demo';
+    }
+    
+    async function start() {
+        const app_name = getAppName();
+        statusText.innerText = 'launching demo app: ' + app_name;
+        let app;
+        try {
+            app = await deos.launch(app_name, app_instance);
+            app_instance = app.instance;
+            iframe.src = app.url;
+            statusText.innerText = '';
+        } catch (error) {
+            statusText.innerText = error;
+            if (app) deos.close(app.instance);
+        }
+    }
+
+    async function instances() {
+        const app_name = getAppName();
+        statusText.innerText = 'get instances for app: ' + app_name;
+        try {
+            const instances = await deos.instances(app_name);
+            statusText.innerText = instances;
+        } catch (error) {
+            statusText.innerText = error;
+        }
+    }
+
+    async function stopAll() {
+        const app_name = getAppName();
+        const instances = await deos.instances(app_name);
+        instances.forEach( async (instance, index) => {
+            statusText.innerText = 'stop instance: ' + instance;
+            await deos.close(instance);
+        });
+    }
+
+    async function quota() {
+        const app_name = getAppName();
+        const quotas = await deos.quota(app_name);
+        statusText.innerText = 'instance quota for ' + app_name +   ': ' + quotas;
+    }
+
+</script>   
+</html>
