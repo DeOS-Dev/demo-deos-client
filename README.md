@@ -47,6 +47,7 @@ This command will open your default web browser and serve the `index.html` file.
 
 - index.html: The main HTML file that includes the buttons and script.
 - script.js: The JavaScript file that imports the deos-client library, and defines methods.
+- config.js: The JavaScript file that sets the Deos API Key and environment name.
 - webpack.config.js: The Webpack configuration file used to bundle the JavaScript files.
 - dist/: The directory where the bundled JavaScript file (bundle.js) is output.
 
