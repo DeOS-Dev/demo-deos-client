@@ -62,4 +62,5 @@ This command will open your default web browser and serve the `index.html` file.
 ## Notes
 
 - Replace `<your-api-key-here>` in config.js with your actual API key.
-- Replace `<environment-id>` in config.js with the correct environment. Not required. Default: `kef.appfeine`
+- Replace `<environment-id>` in config.js with the correct environment. Not required. Default: `kef.appfeine`.
+- Update the select field in the index HTML file to allow for adding, modifying, or deleting games.
