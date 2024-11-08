@@ -19,14 +19,15 @@ var client = deosClient(window.apiKey, window.endpoint);
             return await client.getAllInstances(app_name);
         },
 
-        launch: async (app_name, app_instance) => {
-            console.log('launch: App Name:[' + app_name + '] App Instance: [' + app_instance + ']');
+        launch: async (app_name, app_instance, turboName, envVars, customCommand) => {
+            turboName = turboName === ''? undefined : turboName;
+            console.log('launch: App Name:[' + app_name + '] App Instance: [' + app_instance + '] Turbo combo ultra: [' + turboName + ']' );
 
             if (app_instance && app_instance !== '') {
                 return await run(app_instance, DEFAULT_OPTIONS);
             }
 
-            return await client.launch(app_name, DEFAULT_OPTIONS);
+            return await client.launch(app_name, DEFAULT_OPTIONS, turboName, envVars, customCommand);
         },
 
         close: async (app_instance) => {
@@ -46,7 +47,11 @@ var client = deosClient(window.apiKey, window.endpoint);
 
         testConnection: async () => {
             return await client.testConnection();
-        }
+        },
+
+        turbos: async (app_name) => {
+            return await client.getTurbos(app_name);
+        },
     };
   
     window.deos = deos;

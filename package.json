@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "deos-client": "^1.0.18"
+    "deos-client": "^1.0.20"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
