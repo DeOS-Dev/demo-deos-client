@@ -3,10 +3,23 @@
 <head>
     <title>Deos Client Demo App</title>
     <style>
-        .variable-pair {
-          display: flex;
-          gap: 10px;
-          margin-top: 5px;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        #main-container {
+            margin: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #app-options {
+            display: flex;
+            gap: 1rem;
         }
 
         button {
@@ -15,19 +28,41 @@
             font-size: 16px;
             border-radius: 8px;
             cursor: pointer;
+            background-color: #dcdcdc;
         }
 
         button:focus {
             box-shadow: 0 0 5px rgba(81, 203, 238, 1);
         }
 
-        #main-container{
-            margin: 1rem;
+        #configInputs {
+            background-color: #f9f9f9;
+            border: 1px solid #5b6672;
+            padding: 1rem;
+            border-radius: 4px;
+            gap: 2rem;
+            position: relative;
+        }
+
+        .addElementBtn {
+            margin-top: 1rem;
+            margin-bottom: 2rem
+        }
+
+        .optional-params {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+        }
+
+        .variable-pair {
             display: flex;
-            flex-direction: column;
             gap: 10px;
-            justify-content: center; /* Center horizontally */
-            align-items: center; /* Center vertically */
+            margin-top: 5px;
+        }
+
+        select {
+            padding: 8px;
         }
 
         .flash {
@@ -43,25 +78,11 @@
             }
         }
 
-        #configInputs {
-            background-color: #e1c1801c;
-            border: 1px solid #5b6672;
-            padding: 1rem;
-            border-radius: 4px;
-        }
-
-        select {
-            padding: 8px;
-        }
-
       </style>
 </head>
 <body>
     <div id="main-container">
-        <div id="app-options" style="
-            display: flex;
-            gap: 1rem;
-        ">
+        <div id="app-options">
             <div>
                 <label for="dropdown">Select an app:</label>
                 <select id="dropdown" name="dropdown">
@@ -78,27 +99,26 @@
                 <button id="optionalParams">Add optional parameters</button>
             </div>
         </div>
-        <div id="configInputs" style="display: none; gap: 1rem; position: relative;">
+        <div id="configInputs" style="display: none;">
             <div>
                 <h3>Environment variables</h3>
-                <div id="envVariablesContainer">
-                    <div class="variable-pair" style="height: 2rem;">
-                        <label>Name:</label>
-                        <input type="text" name="envName[]" class="env-name" placeholder="Enter name">
-                        <label>Value:</label>
-                        <input type="text" name="envValue[]" class="env-value" placeholder="Enter value">
-                    </div>
-                </div>
-                <button id="addVariableButton" type="button" style="margin-top: 1rem;">Add Variable</button>
-                
+                <div id="envVariablesContainer"></div>
+                <button id="addVariableButton" class="addElementBtn" type="button">Add Variable</button>
             </div>
             <div>
-                <h3>Command to run</h3>
-                <input style="height: 26px;" type="text" id="commandToRun" name="commandToRun" placeholder="Enter command to run">
+                <h3>Command to run (Post start)</h3>
+                <textarea id="commandToRun" placeholder="Enter command to run"></textarea>
             </div>
-            <a id="documentationLink" href="#" target="_blank" style="position: absolute; bottom: 10px; right: 10px;">What are optional params?</a>         
+            <div>
+                <h3>Arguments</h3>
+                <div id="argumentsContainer"></div>
+                <button id="addArgumentBtn" type="button" class="addElementBtn">Add new Argument</button>
+            </div>
+            <div class="optional-params">
+                <a id="documentationLink" href="#" target="_blank">What are optional params?</a>
+            </div>
         </div>
-        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <div id="controls">
             <button id="fullscreen" onClick="requestFullScreen()">Fullscreen</button>
             <button id="instances" onClick="instances()">Show all instances</button>
             <button id="stopall" onClick="stopAll()">Stop all instances</button>
@@ -106,13 +126,9 @@
             <button id="stop" onClick="quit()">Stop running App</button>
             <button id="try" onClick="start()">Try App</button>
         </div>
-        <div>
-            <p id="status"></p>
-        </div>
-        <div id="iframe">
-            
-            <iframe id="iFrame" width="1200" height="640" frameborder="0" style="position:relative;z-index:100" allow="autoplay"></iframe>
-        </div>
+        <p id="status"></p>
+        <iframe id="iFrame" width="1200" height="640" frameborder="0"></iframe>
+    </div>
         
     </div>
     
@@ -123,160 +139,123 @@
     const iframe = document.getElementById("iFrame");
     const fullscreenButton = document.getElementById("fullscreen");
     const statusText = document.getElementById("status");
-    let app_instance = '';
+    let appInstance = "";
 
-    function removeOptionalParams() {
-        const envVarsElement = document.getElementById('envVariablesContainer').querySelectorAll("div");
-        const commandsElement = document.getElementById('commandToRun');
+    // Utility Functions
+    const getAppName = () => document.getElementById("dropdown").value;
+    const getCommandToRun = () => document.getElementById("commandToRun").value;
+    const getTurbo = () => document.getElementById("turbo").value;
 
-        for (let i = 0; i < envVarsElement.length; i++) {
-            if (i === 0) {
-                const firstDivInputs = envVarsElement[i].querySelectorAll("input");
-                firstDivInputs.forEach(input => {
-                    input.value = "";
-                });
-            } else {
-                envVarsElement[i].remove();
-            }
-        }
+    // Reusable function to create labeled input fields
+    function createLabeledInput(labelText, inputType, inputClass, inputName, placeholder) {
+        const label = document.createElement("label");
+        label.textContent = labelText;
 
-        commandsElement.value = '';
+        const input = document.createElement("input");
+        input.type = inputType;
+        input.className = inputClass;
+        input.name = inputName;
+        input.placeholder = placeholder;
 
+        return { label, input };
     }
 
-    document.getElementById('optionalParams').addEventListener('click', function() {
-        const documentationLink = document.getElementById('documentationLink');
-        const documentationUrl = 'https://' + window.endpoint + ".com/doc/docs/api/core/#launch";
-        
-        documentationLink.href = documentationUrl;
-        
-        var configInputs = document.getElementById('configInputs');
-        var optionalParamsBtn = document.getElementById('optionalParams');
+    // Add/Remove Elements
+    function addElement(containerId, elementType, inputConfig, removeText = "Remove") {
+        const container = document.getElementById(containerId);
+        const element = document.createElement("div");
+        element.className = "variable-pair";
 
-        configInputs.style.display = configInputs.style.display === 'none' ? 'flex' : 'none';
-        if (optionalParamsBtn.innerText === 'Add optional parameters') {
-            optionalParamsBtn.innerText = 'Remove optional parameters';
-        } else {
-            optionalParamsBtn.innerText = 'Add optional parameters';
-            removeOptionalParams();
-            
-        }
-    });
-
-    document.getElementById('dropdown').addEventListener('change', function() {
-        loadTurbos();
-    });
-
-    document.getElementById('addVariableButton').addEventListener('click', function() {
-        const container = document.getElementById('envVariablesContainer');
-        const variablePair = document.createElement('div');
-
-        variablePair.className = 'variable-pair';
-        const nameLabel = document.createElement('label');
-        nameLabel.textContent = 'Name:';
-        const nameInput = document.createElement('input');
-        nameInput.type = 'text';
-        nameInput.className = 'env-name';
-        nameInput.name = 'envName[]';
-        nameInput.placeholder = 'Enter name';
-
-        const valueLabel = document.createElement('label');
-        valueLabel.textContent = 'Value:';
-        const valueInput = document.createElement('input');
-        valueInput.type = 'text';
-        valueInput.name = 'envValue[]';
-        valueInput.placeholder = 'Enter value';
-        valueInput.className = 'env-value';
-
-        const removeButton = document.createElement('button');
-        removeButton.type = 'button';
-        removeButton.textContent = 'Remove';
-        removeButton.addEventListener('click', function() {
-            container.removeChild(variablePair);
+        inputConfig.forEach(config => {
+            const { label, input } = createLabeledInput(...config);
+            element.appendChild(label);
+            element.appendChild(input);
         });
 
-        variablePair.appendChild(nameLabel);
-        variablePair.appendChild(nameInput);
-        variablePair.appendChild(valueLabel);
-        variablePair.appendChild(valueInput);
-        variablePair.appendChild(removeButton);
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.textContent = removeText;
+        removeButton.addEventListener("click", () => container.removeChild(element));
 
-        container.appendChild(variablePair);
+        element.appendChild(removeButton);
+        container.appendChild(element);
+    }
+
+    // Environment Variables
+    document.getElementById("addVariableButton").addEventListener("click", () => {
+        addElement("envVariablesContainer", "div", [
+            ["Name:", "text", "env-name", "envName[]", "Enter name"],
+            ["Value:", "text", "env-value", "envValue[]", "Enter value"]
+        ]);
     });
 
-    window.addEventListener('message', (event) => {
-        if (event.data.type === 'log') {
-            console.log('Log from iframe:', event);
-        }
+    // Custom Arguments
+    document.getElementById("addArgumentBtn").addEventListener("click", () => {
+        addElement("argumentsContainer", "div", [
+            ["", "textarea", "arg-value", "argument[]", "Enter new Argument"]
+        ]);
     });
 
-    window.addEventListener("DOMContentLoaded", () => {
-        loadTurbos();
-    });
+    // Optional Parameters Toggle
+    function toggleOptionalParams() {
+        const configInputs = document.getElementById("configInputs");
+        const optionalParamsBtn = document.getElementById("optionalParams");
+        configInputs.style.display = configInputs.style.display === "none" ? "flex" : "none";
 
-    function requestFullScreen() {
-        iframe.requestFullscreen();
-        iframe.focus();
-        navigator.keyboard.lock();
+        optionalParamsBtn.innerText = optionalParamsBtn.innerText.includes("Add")
+            ? "Remove optional parameters"
+            : "Add optional parameters";
+
+        if (optionalParamsBtn.innerText.includes("Add")) clearOptionalParams();
     }
 
-    function getAppName() {
-        const dropdown = document.getElementById("dropdown");
-        return dropdown.value;
+    function clearOptionalParams() {
+        document.querySelectorAll("#envVariablesContainer > div:not(:first-child)").forEach(e => e.remove());
+        document.querySelectorAll("#envVariablesContainer input").forEach(input => (input.value = ""));
+        document.getElementById("commandToRun").value = "";
     }
 
-    function getEnvironmentVariables() {
-        const envVariables = [];
-        const nameInputs = document.querySelectorAll('.env-name');
-        const valueInputs = document.querySelectorAll('.env-value');
+    document.getElementById("optionalParams").addEventListener("click", toggleOptionalParams);
 
-        nameInputs.forEach((nameInput, index) => {
-        const valueInput = valueInputs[index];
-        if (nameInput.value && valueInput.value) {
-            envVariables.push({
-            name: nameInput.value,
-            value: valueInput.value
-            });
-        }
-        });
-        return envVariables;
-    }
-
-    function getCommandToRun() {
-        const commandToRun = document.getElementById('commandToRun').value;
-        return (commandToRun);
-    }
-
-    function getTurbo() {
-        const turbo = document.getElementById("turbo");
-        return turbo.value;
-    }
-
+    // Load Turbos
     async function loadTurbos() {
-        const app_name = getAppName();
-        const turboData = await deos.turbos(app_name);
+        const appName = getAppName();
+        const turboData = await deos.turbos(appName);
         const turboSelect = document.getElementById("turbo");
 
-        // Reset turbo values
         turboSelect.innerHTML = '<option value="">Select turbo</option>';
-        
-        turboData.data.forEach(item => {
+        turboData.data.forEach(({ turbo_name, description, config_name }) => {
             const option = document.createElement("option");
-            option.value = item.turbo_name;
-            option.text = item.turbo_name;
-            if (item.description) {
-                option.text = item.turbo_name + ' - ' + item.description;
-            }
-            if (item.config_name === "DEFAULT") {
-                option.selected = true;
-            }
+            option.value = turbo_name;
+            option.text = `${turbo_name}${description ? ` - ${description}` : ""}`;
+            if (config_name === "DEFAULT") option.selected = true;
             turboSelect.appendChild(option);
         });
     }
 
+    document.getElementById("dropdown").addEventListener("change", loadTurbos);
+
+    // Data Collection
+    function collectInputs(selector) {
+        return Array.from(document.querySelectorAll(selector))
+            .map(input => input.value.trim())
+            .filter(value => value);
+    }
+
+    function getEnvironmentVariables() {
+        const names = collectInputs(".env-name");
+        const values = collectInputs(".env-value");
+        return names.map((name, i) => ({ name, value: values[i] }));
+    }
+
+    function getArguments() {
+        return collectInputs(".arg-value");
+    }
+
+    // Actions
     function quit() {
-        deos.close(app_instance);
-        app_instance = '';
+        deos.close(appInstance);
+        appInstance = '';
         iframe.src = '';
         statusText.innerText = 'Thank you for trying the demo';
     }
@@ -285,14 +264,15 @@
         const app_name = getAppName();
         const envVars = getEnvironmentVariables();
         const commandToRun = getCommandToRun();
+        const customArguments = getArguments();
         const turboName = getTurbo();
 
         statusText.classList.add("flash");
         statusText.innerText = 'Launching demo app: ' + app_name;
         let app;
         try {
-            app = await deos.launch(app_name, app_instance, turboName, envVars, commandToRun);
-            app_instance = app.instance;
+            app = await deos.launch(app_name, appInstance, turboName, envVars, commandToRun, customArguments);
+            appInstance = app.instance;
             iframe.src = app.url;
             statusText.innerText = '';
         } catch (error) {
@@ -328,6 +308,16 @@
         const quotas = await deos.quota(app_name);
         statusText.innerText = 'instance quota for ' + app_name +   ': ' + quotas;
     }
+
+    function requestFullScreen() {
+        iframe.requestFullscreen();
+        iframe.focus();
+        navigator.keyboard.lock();
+    }
+
+    // Event Listeners
+    fullscreenButton.addEventListener("click", requestFullScreen);
+    window.addEventListener("DOMContentLoaded", loadTurbos);
 
 </script>   
 </html>
