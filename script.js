@@ -8,7 +8,6 @@ var client = deosClient(window.apiKey, window.endpoint);
     const DEFAULT_OPTIONS = { intervalMs: DEOS_RETRY_TIMEOUT_MS };
 
     const run = async (app_instance) => {
-        console.log('running app: ' + app_name);
         const response = await client.run(app_instance, DEFAULT_OPTIONS);
         return { instance: app_instance, url: response.url };
     }
@@ -29,6 +28,11 @@ var client = deosClient(window.apiKey, window.endpoint);
             }
 
             return await client.launch(app_name, DEFAULT_OPTIONS, turboName, envVars, customCommand, customArguments);
+        },
+
+        run: async (app_instance) => {
+            const response = await client.run(app_instance, DEFAULT_OPTIONS);
+            return { instance: app_instance, url: response };
         },
 
         close: async (app_instance) => {
