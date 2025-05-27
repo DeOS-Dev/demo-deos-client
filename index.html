@@ -114,6 +114,11 @@
                 <div id="argumentsContainer"></div>
                 <button id="addArgumentBtn" type="button" class="addElementBtn">Add new Argument</button>
             </div>
+            <div>
+                <h3>Custom Settings</h3>
+                <div id="customEdgeConfigContainer"></div>
+                <button id="addCustomEdgeVarButton" class="addElementBtn" type="button">Add Setting</button>
+            </div>
             <div class="optional-params">
                 <a id="documentationLink" href="#" target="_blank">What are optional params?</a>
             </div>
@@ -197,6 +202,14 @@
         ]);
     });
 
+    // Custom Edge Config
+    document.getElementById("addCustomEdgeVarButton").addEventListener("click", () => {
+        addElement("customEdgeConfigContainer", "div", [
+            ["Name:", "text", "edgeConfig-name", "edgeConfigName[]", "Enter name"],
+            ["Value:", "text", "edgeConfig-value", "edgeConfigValue[]", "Enter value"]
+        ]);
+    });
+
     // Optional Parameters Toggle
     function toggleOptionalParams() {
         const configInputs = document.getElementById("configInputs");
@@ -213,6 +226,8 @@
     function clearOptionalParams() {
         document.querySelectorAll("#envVariablesContainer > div:not(:first-child)").forEach(e => e.remove());
         document.querySelectorAll("#envVariablesContainer input").forEach(input => (input.value = ""));
+        document.querySelectorAll("#customEdgeConfigContainer > div:not(:first-child)").forEach(e => e.remove());
+        document.querySelectorAll("#customEdgeConfigContainer input").forEach(input => (input.value = ""));
         document.getElementById("commandToRun").value = "";
     }
 
@@ -249,6 +264,13 @@
         return names.map((name, i) => ({ name, value: values[i] }));
     }
 
+
+    function getCustomEdgeConfig() {
+        const names = collectInputs(".edgeConfig-name");
+        const values = collectInputs(".edgeConfig-value");
+        return names.map((name, i) => ({ name, value: values[i] }));
+    }
+
     function getArguments() {
         return collectInputs(".arg-value");
     }
@@ -264,6 +286,7 @@
     async function start() {
         const app_name = getAppName();
         const envVars = getEnvironmentVariables();
+        const customEdgeConfig = getCustomEdgeConfig();
         const commandToRun = getCommandToRun();
         const customArguments = getArguments();
         const turboName = getTurbo();
@@ -272,7 +295,7 @@
         statusText.innerText = 'Launching demo app: ' + app_name;
         let app;
         try {
-            app = await deos.launch(app_name, appInstance, turboName, envVars, commandToRun, customArguments);
+            app = await deos.launch(app_name, appInstance, turboName, envVars, commandToRun, customArguments, customEdgeConfig);
             appInstance = app.instance;
             iframe.src = app.url;
             statusText.innerText = '';
