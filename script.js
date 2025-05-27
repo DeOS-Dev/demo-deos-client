@@ -18,7 +18,7 @@ var client = deosClient(window.apiKey, window.endpoint);
             return await client.getAllInstances(app_name);
         },
 
-        launch: async (app_name, app_instance, turboName, envVars, customCommand, customArguments) => {
+        launch: async (app_name, app_instance, turboName, envVars, customCommand, customArguments, customEdgeConfig) => {
             turboName = turboName === ''? undefined : turboName;
             console.log('launch: App Name:[' + app_name + '] App Instance: [' + app_instance + '] Turbo combo ultra: [' + turboName + ']' );
             console.log(`Sending arguments [${customArguments}]`);
@@ -27,7 +27,7 @@ var client = deosClient(window.apiKey, window.endpoint);
                 return await run(app_instance, DEFAULT_OPTIONS);
             }
 
-            return await client.launch(app_name, DEFAULT_OPTIONS, turboName, envVars, customCommand, customArguments);
+            return await client.launch(app_name, DEFAULT_OPTIONS, turboName, envVars, customCommand, customArguments, customEdgeConfig);
         },
 
         run: async (app_instance) => {
